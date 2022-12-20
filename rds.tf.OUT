@@ -1,0 +1,11 @@
+resource "aws_db_instance" "wp_rds_db" {
+  allocated_storage    = 10
+  db_name              = var.wp_rds_db_name
+  engine               = var.wp_rds_engine
+  engine_version       = var.wp_rds_engine_version
+  instance_class       = var.wp_rds_instance_class
+  username             = var.wp_rds_db_name
+  password             = var.wp_rds_db_password
+  parameter_group_name = var.wp_rds_parameter_group_name
+  skip_final_snapshot  = true
+}

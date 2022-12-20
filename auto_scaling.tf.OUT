@@ -1,0 +1,47 @@
+resource "aws_launch_configuration" "as_lc" {
+  name_prefix   = "aslc"
+  associate_public_ip_address = true
+  image_id      = "ami-0149b2da6ceec4bb0"
+  instance_type = "t2.micro"
+  key_name      = "key_linux"
+  security_groups = [ "${aws_security_group.security_group.id}" ]
+}
+
+resource "aws_autoscaling_group" "as_group" {
+  name = "asgroup"
+  vpc_zone_identifier = [ "${aws_subnet.subnet1.id}", "${aws_subnet.subnet2.id}", "${aws_subnet.subnet3.id}" ]
+  launch_configuration = "aws_launch_configuration.as_lc.name"
+  min_size = 1
+  max_size = 3
+  health_check_grace_period = 300
+  health_check_type = "EC2"
+  force_delete = true
+}
+
+resource "aws_autoscaling_policy" "as_policy" {
+  name = "aspolicy"
+  autoscaling_group_name = "aws_autoscaling_group.as_group.name"
+  adjustment_type = "ChangeInCapacity"
+  scaling_adjustment = "1"
+  cooldown = "300"
+  policy_type = "SimpleScaling"
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_alarm" {
+  alarm_name = "cpu_alarm"
+  alarm_description = "cpu_alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods = "2"
+  metric_name = "CPUUtilization"
+  namespace = "AWS/EC2"
+  period = "120"
+  statistic = "Average"
+  threshold = "30"
+
+  dimensions = {
+    "AutoScalingGroupName" = "aws_autoscaling_group.asgroup.name"
+  }
+
+  actions_enabled = true
+  alarm_actions = [ "${aws_autoscaling_policy.as_policy.arn}" ]
+}
